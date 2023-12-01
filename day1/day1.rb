@@ -1,40 +1,33 @@
-#!/usr/bin/env ruby
+def digit?(char)
+  char.ord >= 48 && char.ord <= 57
+end
 
-data = File.read("input")
+data = File.read('input')
+puts 'Day 1'
+puts 'Part 1'
+digits = data.lines.map do |l|
+  l.chars.select { |c| digit?(c) }
+end
+nums = digits.map { |chars| (chars[0] + chars[-1]).to_i }
+puts nums.sum
 
-puts "Day 1"
-puts "Part 1"
-puts data.lines.map { |l|
-  l.chars.select {
-    |c| 48 <= c.ord && c.ord <= 57
-  }
-}.map { |chars|
-  chars[0] + chars[-1]
-}.map { |num_string|
-  num_string.to_i()
-}.sum()
-
-puts "Part 2"
-digits = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
-puts data.lines.map { |l|
+puts 'Part 2'
+digits = %w[one two three four five six seven eight nine]
+digit_lists = data.lines.map do |l|
   res = []
-  l.chars.each_index { |i|
+  l.chars.each_index do |i|
     c = l[i]
-    if 48 <= c.ord && c.ord <= 57
+    if digit?(c)
       res.append(c)
       next
     end
-    rest = l[i..-1]
-    digits.each_index { |i|
-      digit = digits[i]
-      if rest.start_with?(digit)
-        res.append((i+1).to_s)
-      end
-    }
-  }
+    rest = l[i..]
+    digits.each_index do |j|
+      digit = digits[j]
+      res.append((j + 1).to_s) if rest.start_with?(digit)
+    end
+  end
   res
-}.map { |chars|
-  chars[0] + chars[-1]
-}.map { |num_string|
-  num_string.to_i()
-}.sum()
+end
+nums = digit_lists.map { |digit_list| (digit_list[0] + digit_list[-1]).to_i }
+puts nums.sum
