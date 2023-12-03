@@ -1,98 +1,73 @@
-require 'pp'
-
-system('clear')
-
 Loc = Struct.new(:range, :text)
+
+# Extending existing class
+class Range
+  def intersect?(other)
+    include?(other.begin) || include?(other.end)
+  end
+end
 
 def scan_line(line, regex)
   res = []
   line.scan(regex) do |match|
+    offset = Regexp.last_match.offset(0)
+    range = offset[0]..(offset[1] - 1)
     res << Loc.new(
-      Regexp.last_match.offset(0),
-      match,
+      range,
+      match
     )
   end
   res
 end
 
 def parse(data)
-  re_number = /\d+/
-  re_symbol = /[^\d.\n]/
   numbers = {}
   symbols = {}
   data.lines.each_with_index do |line, line_number|
-    numbers[line_number] =  scan_line(line, re_number)
-    symbols[line_number] = scan_line(line, re_symbol)
+    numbers[line_number] = scan_line(line, /\d+/)
+    symbols[line_number] = scan_line(line, /[^\d.\n]/)
   end
   [numbers, symbols]
 end
 
-def adjacent_symbol?(number, line_number, symbols)
-  (line_number-1..line_number+1).each do |symbol_line_number|
-    symbols_on_line = symbols[symbol_line_number]
-    if !symbols_on_line
-        next
-    end
-    symbols_on_line.each do |symbol|
-      range = number.range[0] - 1..number.range[1]
-      if range.include? symbol.range[0]
-        return true
-      end
+def compute_adjacent(needle, line_number, haystack)
+  (line_number - 1..line_number + 1).flat_map do |haystack_line_number|
+    items = haystack[haystack_line_number]
+    next unless items
+
+    items.select do |item|
+      needle_range = (needle.range.begin - 1)..(needle.range.end + 1)
+      next true if needle_range.intersect?(item.range)
     end
   end
-  return false
+end
+
+def adjacent_symbol?(number, line_number, symbols)
+  compute_adjacent(number, line_number, symbols).any?
 end
 
 def gear_ratio(symbol, line_number, numbers)
-  if symbol.text != "*"
-    return 0
-  end
-  adjacent_numbers = []
-  (line_number-1..line_number+1).each do |number_line_number|
-    numbers_on_line = numbers[number_line_number]
-    if !numbers_on_line
-        next
-    end
-    adjacent_numbers_on_line = numbers_on_line.select do |number|
-      range = number.range[0] - 1..number.range[1]
-      if range.include? symbol.range[0]
-        next true
-      end
-    end
-    adjacent_numbers.concat adjacent_numbers_on_line
-  end
+  return 0 unless symbol.text == '*'
+
+  adjacent_numbers = compute_adjacent(symbol, line_number, numbers)
   if adjacent_numbers.count == 2
-    return adjacent_numbers.inject { |a, b| a.text.to_i * b.text.to_i }
+    adjacent_numbers.inject { |a, b| a.text.to_i * b.text.to_i }
+  else
+    0
   end
-  0
 end
 
-
-data = File.read('input')
-# puts data
+data = File.read('test')
 numbers, symbols = parse(data)
-# puts "Numbers:"
-# pp numbers
-# puts "Symbols:"
-# pp symbols
 
 puts 'Day 3'
 puts 'Part 1'
-
-selected = []
-numbers.each do |line_number, numbers_on_line|
-  numbers_on_line.each do |number|
-    if adjacent_symbol?(number, line_number, symbols)
-      selected << number
-    end
-  end
+selected = numbers.flat_map do |line_number, numbers_on_line|
+  numbers_on_line.select { |number| adjacent_symbol?(number, line_number, symbols) }
 end
-
-puts selected.sum { |n| n.text.to_i }
+puts(selected.sum { |n| n.text.to_i })
 
 puts 'Part 2'
-total = 0
-symbols.each do |line_number, symbols_on_line|
-  total += symbols_on_line.sum { |symbol| gear_ratio(symbol, line_number, numbers) }
-end
-puts total
+puts(symbols.reduce(0) do |total, (line_number, symbols_on_line)|
+       total + symbols_on_line.sum { |symbol| gear_ratio(symbol, line_number, numbers) }
+     end)

@@ -1,4 +1,8 @@
 Style/FrozenStringLiteralComment:
   Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
 AllCops:
   NewCops: enable
