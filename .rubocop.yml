@@ -4,5 +4,7 @@ Metrics/MethodLength:
   Enabled: false
 Metrics/CyclomaticComplexity:
   Enabled: false
+Style/OneLineConditional:
+  Enabled: false
 AllCops:
   NewCops: enable
